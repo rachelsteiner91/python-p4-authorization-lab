@@ -18,6 +18,24 @@ db.init_app(app)
 
 api = Api(app)
 
+##allows logged in users to access member-only article index at /members_only_articles. - assert 200 == 401
+# ../Flask API in app.py allows logged in users to access member-only article index at /members_only_articles.                                                       
+# ../Flask API in app.py only shows member-only articles at /members_only_articles.                                                                             
+# ../Flask API in app.py allows logged in users to access full member-only articles at /members_only_articles/<int:id>. 
+@app.before_request
+def check_if_logged_in():
+    open_access_list = [
+        'clear',
+        'article_list',
+        'show_article',
+        'login',
+        'logout',
+        'check_session'
+    ]
+    if (request.endpoint) not in open_access_list and (not session.get('user_id')):
+        return {'error': '401 Unauthorized'}, 401
+
+
 class ClearSession(Resource):
 
     def delete(self):
@@ -84,15 +102,19 @@ class CheckSession(Resource):
         
         return {}, 401
 
+
+##Flask API in app.py allows logged in users to access member-only article index at /members_only_articles. - assert 200 == 401
 class MemberOnlyIndex(Resource):
     
     def get(self):
-        pass
+        articles = Article.query.filter(Article.is_member_only == True).all()
+        return [article.to_dict() for article in articles], 200
 
 class MemberOnlyArticle(Resource):
     
     def get(self, id):
-        pass
+        article = Article.query.filter(Article.id == id).first()
+        return article.to_dict(), 200
 
 api.add_resource(ClearSession, '/clear', endpoint='clear')
 api.add_resource(IndexArticle, '/articles', endpoint='article_list')
